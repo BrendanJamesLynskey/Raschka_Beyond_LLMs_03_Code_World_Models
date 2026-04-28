@@ -1,0 +1,807 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Beyond Standard LLMs 03 &mdash; Code World Models</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #0a0a0a; --bg-card: #0d1117; --bg-code: #161b22;
+            --text-primary: #e6edf3; --text-secondary: #8b949e;
+            --accent: #76B900; --accent-dim: #76B90044; --accent-glow: #76B90033;
+            --warm: #ffa657; --warm-dim: rgba(255,166,87,0.15);
+            --bad: #ff7b72;
+            --border: #21262d;
+            --font-display: 'Space Grotesk', sans-serif;
+            --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+            --font-body: 'Inter', sans-serif;
+            --max-width: 900px;
+        }
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        html { scroll-behavior: smooth; }
+        body { background: var(--bg-primary); color: var(--text-primary);
+               font-family: var(--font-body); font-size: 17px; line-height: 1.7;
+               overflow-x: hidden; }
+        .hero { min-height: 100vh; display: flex; flex-direction: column;
+                justify-content: center; align-items: center;
+                padding: 2rem 1.5rem; text-align: center; position: relative; }
+        .hero::before { content: ''; position: absolute; top: 0; left: 50%;
+                        transform: translateX(-50%); width: 600px; height: 600px;
+                        background: radial-gradient(circle, var(--accent-glow) 0%, transparent 70%);
+                        pointer-events: none; z-index: 0; }
+        .hero > * { position: relative; z-index: 1; }
+        .series-label { font-family: var(--font-mono); font-size: 0.85rem;
+                        color: var(--accent); letter-spacing: 0.15em;
+                        text-transform: uppercase; margin-bottom: 1rem; }
+        .hero h1 { font-family: var(--font-display);
+                   font-size: clamp(2rem, 5vw, 3.2rem); font-weight: 700;
+                   color: var(--text-primary); line-height: 1.2; margin-bottom: 1rem; }
+        .hero h1 .accent { color: var(--accent); }
+        .hero .subtitle { font-size: 1.1rem; color: var(--text-secondary);
+                          max-width: 720px; margin-bottom: 2rem; }
+        .tags { display: flex; flex-wrap: wrap; gap: 0.5rem;
+                justify-content: center; margin-bottom: 2.5rem; }
+        .tag { font-family: var(--font-mono); font-size: 0.75rem;
+               padding: 0.25rem 0.75rem; border-radius: 999px;
+               border: 1px solid var(--accent); color: var(--accent);
+               background: var(--accent-dim); white-space: nowrap; }
+        .pipeline { display: flex; flex-wrap: wrap; align-items: center;
+                    justify-content: center; gap: 0.25rem; margin-bottom: 1rem;
+                    max-width: var(--max-width); }
+        .pipeline-step { font-family: var(--font-mono); font-size: 0.7rem;
+                         padding: 0.3rem 0.7rem; background: var(--bg-card);
+                         border: 1px solid var(--border); border-radius: 4px;
+                         color: var(--text-secondary); white-space: nowrap; }
+        .pipeline-arrow { color: var(--accent); font-size: 0.9rem; font-weight: 700; }
+        .slide { min-height: 100vh; max-width: var(--max-width);
+                 margin: 0 auto; padding: 4rem 1.5rem; position: relative;
+                 display: flex; flex-direction: column; justify-content: center; }
+        .slide-number { font-family: var(--font-display); font-size: 5rem;
+                        font-weight: 700; color: var(--accent-dim);
+                        position: absolute; top: 2rem; right: 1.5rem;
+                        line-height: 1; user-select: none; }
+        .slide h2 { font-family: var(--font-display); font-size: 1.9rem;
+                    font-weight: 700; color: var(--accent); margin-bottom: 1.5rem;
+                    line-height: 1.25; }
+        .slide h3 { font-family: var(--font-display); font-size: 1.3rem;
+                    font-weight: 600; color: var(--text-primary);
+                    margin-top: 1.5rem; margin-bottom: 0.75rem; }
+        .slide p { margin-bottom: 1rem; color: var(--text-secondary); }
+        .slide p strong { color: var(--text-primary); }
+        .slide ul, .slide ol { margin-bottom: 1rem; padding-left: 1.5rem;
+                               color: var(--text-secondary); }
+        .slide li { margin-bottom: 0.4rem; }
+        .slide li strong { color: var(--text-primary); }
+        .slide code { font-family: var(--font-mono); font-size: 0.88em;
+                      background: var(--bg-code); border: 1px solid var(--border);
+                      padding: 0.05rem 0.35rem; border-radius: 3px; color: #c9d1d9; }
+        .code-block { background: var(--bg-code); border: 1px solid var(--border);
+                      border-radius: 8px; margin: 1.25rem 0; overflow: hidden; }
+        .code-header { font-family: var(--font-mono); font-size: 0.75rem;
+                       color: var(--accent); background: rgba(118, 185, 0, 0.08);
+                       padding: 0.4rem 1rem; border-bottom: 1px solid var(--border); }
+        .code-block pre { margin: 0; padding: 1rem; overflow-x: auto; }
+        .code-block code { font-family: var(--font-mono); font-size: 0.85rem;
+                           line-height: 1.6; color: #c9d1d9; background: transparent;
+                           border: none; padding: 0; }
+        .kw { color: #ff7b72; } .fn { color: #d2a8ff; } .str { color: #a5d6ff; }
+        .cm { color: #8b949e; font-style: italic; } .num { color: #79c0ff; }
+        .table-wrap { overflow-x: auto; margin: 1.25rem 0; border-radius: 8px;
+                      border: 1px solid var(--border); }
+        table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+        th { background: var(--bg-code); color: var(--accent); font-weight: 600;
+             text-align: left; padding: 0.75rem 1rem; border-bottom: 1px solid var(--border);
+             font-family: var(--font-display); white-space: nowrap; }
+        td { padding: 0.6rem 1rem; border-bottom: 1px solid var(--border);
+             color: var(--text-secondary); }
+        tr:last-child td { border-bottom: none; }
+        tr:nth-child(even) td { background: rgba(13, 17, 23, 0.5); }
+        .diagram-grid { display: grid; gap: 0.75rem; margin: 1.5rem 0;
+                        padding: 1.5rem; background: var(--bg-card);
+                        border: 1px solid var(--border); border-radius: 8px; }
+        .diagram-grid.cols-2 { grid-template-columns: 1fr 1fr; }
+        .diagram-grid.cols-3 { grid-template-columns: 1fr 1fr 1fr; }
+        .diagram-panel { padding: 1rem; background: var(--bg-code);
+                         border: 1px solid var(--border); border-radius: 6px; }
+        .diagram-panel.accent-border { border-left: 3px solid var(--accent); }
+        .diagram-panel h4 { font-family: var(--font-display); font-size: 1rem;
+                            color: var(--accent); margin-bottom: 0.5rem; }
+        .diagram-panel p, .diagram-panel ul { font-size: 0.85rem; }
+        .callout { background: var(--bg-card); border-left: 3px solid var(--accent);
+                   border-radius: 0 8px 8px 0; padding: 1rem 1.25rem; margin: 1.25rem 0; }
+        .callout p { margin-bottom: 0; }
+        .callout p + p { margin-top: 0.5rem; }
+        .callout .callout-label { font-family: var(--font-mono); font-size: 0.75rem;
+                                  color: var(--accent); text-transform: uppercase;
+                                  letter-spacing: 0.1em; margin-bottom: 0.3rem; }
+        .callout.warn { border-left-color: var(--warm); }
+        .callout.warn .callout-label { color: var(--warm); }
+        .contents-list { list-style: none; padding-left: 0; counter-reset: contents; }
+        .contents-list li { counter-increment: contents; padding: 0.6rem 0;
+                            border-bottom: 1px solid var(--border);
+                            display: flex; align-items: center; gap: 1rem; }
+        .contents-list li:last-child { border-bottom: none; }
+        .contents-list li::before { content: counter(contents, decimal-leading-zero);
+                                    font-family: var(--font-mono); font-size: 0.85rem;
+                                    color: var(--accent); min-width: 2rem; }
+        .contents-list a { color: var(--text-primary); text-decoration: none;
+                           transition: color 0.2s; }
+        .contents-list a:hover { color: var(--accent); }
+        .footer { text-align: center; padding: 3rem 1.5rem;
+                  color: var(--text-secondary); font-size: 0.85rem;
+                  border-top: 1px solid var(--border); max-width: var(--max-width);
+                  margin: 0 auto; }
+        .footer a { color: var(--accent); text-decoration: none; }
+        .footer a:hover { text-decoration: underline; }
+        .canvas-wrap { background: var(--bg-card); border: 1px solid var(--border);
+                       border-radius: 8px; padding: 1rem; margin: 1.25rem 0;
+                       overflow-x: auto; }
+        .deck-list { display: flex; flex-direction: column; gap: 0.6rem;
+                     list-style: none; padding: 0; }
+        .deck-card { display: flex; gap: 1rem; padding: 1rem 1.25rem;
+                     background: var(--bg-card); border: 1px solid var(--border);
+                     border-left: 3px solid var(--accent); border-radius: 6px; }
+        .deck-card .num { font-family: var(--font-mono); font-size: 0.8rem;
+                          color: var(--accent); min-width: 2rem; padding-top: 0.15rem; }
+        .deck-card .body { flex: 1; min-width: 0; }
+        .deck-card .deck-title { font-family: var(--font-display); font-size: 1.05rem;
+                                 font-weight: 600; color: var(--text-primary);
+                                 margin-bottom: 0.2rem; }
+        .deck-card a.deck-title { text-decoration: none; }
+        .deck-card a.deck-title:hover { color: var(--accent); }
+        .deck-card .desc { font-size: 0.92rem; color: var(--text-secondary); }
+        .ref-link { display: inline-block; padding: 0.4rem 0.8rem;
+                    border: 1px solid var(--accent); color: var(--accent);
+                    border-radius: 4px; text-decoration: none;
+                    font-family: var(--font-mono); font-size: 0.8rem;
+                    transition: background 0.15s; }
+        .ref-link:hover { background: var(--accent-dim); }
+
+        /* Rollout stepper widget */
+        .roll-card { background: var(--bg-card); border: 1px solid var(--border);
+                     border-left: 3px solid var(--accent); border-radius: 8px;
+                     padding: 1.25rem; margin: 1.25rem 0; }
+        .roll-controls { display: flex; flex-wrap: wrap; gap: 0.6rem;
+                         margin-bottom: 1rem; align-items: center; }
+        .roll-btn { font-family: var(--font-mono); font-size: 0.8rem;
+                    padding: 0.4rem 0.9rem; background: var(--bg-code);
+                    border: 1px solid var(--accent); color: var(--accent);
+                    border-radius: 4px; cursor: pointer; }
+        .roll-btn:hover { background: var(--accent-dim); }
+        .roll-status { font-family: var(--font-mono); font-size: 0.75rem;
+                       color: var(--text-secondary); margin-left: auto; }
+        .roll-track { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+        .roll-panel { background: var(--bg-code); border: 1px solid var(--border);
+                      border-radius: 6px; padding: 0.9rem; }
+        .roll-panel h5 { font-family: var(--font-display); font-size: 0.95rem;
+                         color: var(--accent); margin-bottom: 0.4rem; }
+        .roll-panel .meta { font-family: var(--font-mono); font-size: 0.7rem;
+                            color: var(--text-secondary); margin-bottom: 0.6rem; }
+        .roll-source { font-family: var(--font-mono); font-size: 0.78rem;
+                       color: var(--text-secondary); white-space: pre;
+                       background: var(--bg-primary); border: 1px solid var(--border);
+                       border-radius: 4px; padding: 0.7rem; overflow-x: auto; }
+        .roll-source .cur { background: var(--accent-dim); color: var(--accent); display: inline-block; }
+        .roll-vars { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.6rem; }
+        .roll-var { font-family: var(--font-mono); font-size: 0.75rem;
+                    padding: 0.2rem 0.55rem; border-radius: 4px;
+                    background: var(--bg-card); border: 1px solid var(--border);
+                    color: var(--text-secondary); }
+        .roll-var.changed { border-color: var(--accent); color: var(--accent);
+                            background: var(--accent-dim); }
+        .roll-pred { margin-top: 0.6rem; font-family: var(--font-mono); font-size: 0.78rem; }
+        .roll-pred.ok  { color: var(--accent); }
+        .roll-pred.bad { color: var(--bad); }
+
+        @media (max-width: 640px) {
+            .slide { padding: 3rem 1rem; min-height: auto; }
+            .slide-number { font-size: 3rem; top: 1.5rem; right: 1rem; }
+            .slide h2 { font-size: 1.5rem; }
+            .diagram-grid.cols-2, .diagram-grid.cols-3 { grid-template-columns: 1fr; }
+            .roll-track { grid-template-columns: 1fr; }
+            .pipeline { gap: 0.15rem; }
+            .pipeline-step { font-size: 0.6rem; padding: 0.2rem 0.4rem; }
+            .hero h1 { font-size: 1.8rem; }
+            table { font-size: 0.78rem; }
+        }
+    </style>
+</head>
+<body>
+<header class="hero">
+    <div class="series-label">Beyond Standard LLMs &mdash; Companion to Sebastian Raschka &mdash; Presentation 03</div>
+    <h1>Code <span class="accent">World Models</span></h1>
+    <p class="subtitle">A code model that learns to simulate execution, not just text. CWM 32B matches gpt-oss-20b at parity, exceeds gpt-oss-120b with test-time scaling &mdash; at 4&times; smaller parameter count. The world-modelling mid-training stage is the secret.</p>
+    <div class="tags">
+        <span class="tag">Companion</span>
+        <span class="tag">Sebastian Raschka</span>
+        <span class="tag">CWM</span>
+        <span class="tag">World Model</span>
+        <span class="tag">SWE-bench</span>
+        <span class="tag">Execution Trace</span>
+    </div>
+    <div class="pipeline">
+        <span class="pipeline-step">Pre-training</span>
+        <span class="pipeline-arrow">&rarr;</span>
+        <span class="pipeline-step">Mid-training (world model)</span>
+        <span class="pipeline-arrow">&rarr;</span>
+        <span class="pipeline-step">SFT</span>
+        <span class="pipeline-arrow">&rarr;</span>
+        <span class="pipeline-step">RL</span>
+        <span class="pipeline-arrow">&rarr;</span>
+        <span class="pipeline-step">Code + state traces</span>
+        <span class="pipeline-arrow">&rarr;</span>
+        <span class="pipeline-step">SWE-bench parity</span>
+    </div>
+    <p style="margin-top: 1.5rem; font-size: 0.9rem;"><a class="ref-link" href="https://magazine.sebastianraschka.com/p/beyond-standard-llms" target="_blank" rel="noopener">Read the original article &rarr;</a></p>
+</header>
+
+<section class="slide" id="slide-00">
+    <div class="slide-number">00</div>
+    <h2>Topics We&rsquo;ll Cover</h2>
+    <ul class="contents-list">
+        <li><a href="#slide-01">Why Standard Code LLMs Fail at Execution</a></li>
+        <li><a href="#slide-02">The CWM Bet &mdash; Predict State, Not Just Syntax</a></li>
+        <li><a href="#slide-03">The Architecture &mdash; A 32B Model With Sliding-Window Attention</a></li>
+        <li><a href="#slide-04">Four-Stage Training &mdash; Where the World Model Comes In</a></li>
+        <li><a href="#slide-05">SWE-Bench Results &mdash; Punching Above the Weight Class</a></li>
+        <li><a href="#slide-06">Interactive: World-Model Rollout Stepper</a></li>
+        <li><a href="#slide-07">Limits &mdash; Latency, Training Complexity, Scope</a></li>
+        <li><a href="#slide-08">Companion Decks &mdash; Where to Go Next</a></li>
+        <li><a href="#slide-09">Things to Try Yourself</a></li>
+    </ul>
+
+    <div class="callout">
+        <div class="callout-label">Where this deck sits in the series</div>
+        <p>Linear hybrids and diffusion are <em>generic-purpose</em> architectural plays. CWM is different: it is a <strong>training</strong> innovation tied to a <strong>specific domain</strong> &mdash; code. The interesting question is whether the world-model trick generalises to other tasks, or whether code is uniquely suited because it has a free, executable, ground-truth simulator.</p>
+    </div>
+</section>
+
+<section class="slide" id="slide-01">
+    <div class="slide-number">01</div>
+    <h2>Why Standard Code LLMs Fail at Execution</h2>
+    <p>Standard code LLMs are next-token predictors over <em>tokens of source code</em>. They learn beautifully fluent code that follows the patterns in training data. They do not, in general, know what their code <em>does</em> when it runs. The model has read the function signature, the call sites, the docstring &mdash; but it has not run the program in its head.</p>
+
+    <div class="diagram-grid cols-2">
+        <div class="diagram-panel accent-border">
+            <h4>What standard code LLMs know</h4>
+            <ul>
+                <li>How code is usually <em>spelled</em>: idioms, naming, structure.</li>
+                <li>What APIs commonly compose with what other APIs.</li>
+                <li>What error messages tend to follow what bugs in training-data tickets.</li>
+                <li>How to imitate &ldquo;a unit test for this&rdquo; or &ldquo;a docstring for this&rdquo;.</li>
+            </ul>
+        </div>
+        <div class="diagram-panel accent-border">
+            <h4>What they don&rsquo;t reliably know</h4>
+            <ul>
+                <li>What the value of <code>x</code> is after line 5.</li>
+                <li>Whether the loop terminates.</li>
+                <li>Whether <code>self.cache[key]</code> is populated when line 12 executes.</li>
+                <li>What the program prints if you actually run it.</li>
+            </ul>
+        </div>
+    </div>
+
+    <p>Real engineering tasks &mdash; debugging, multi-step refactors, fixing test failures &mdash; require knowing what the program does. The standard-LLM workaround is to give it a tool: let it run the code in a sandbox and read the output. CWM&rsquo;s bet is that you can also <em>internalise</em> some of that capability so the model needs the sandbox <em>less</em>.</p>
+
+    <div class="callout">
+        <div class="callout-label">Raschka&rsquo;s framing of the difference</div>
+        <p>&ldquo;A code world model learns to <em>simulate what happens when the code runs</em> by predicting program state evolution rather than just syntax patterns.&rdquo; The clean-up of that statement: standard LLMs predict the next character; CWM predicts what the next character implies for the program&rsquo;s state, and learns from the gap between its prediction and what really happened.</p>
+    </div>
+</section>
+
+<section class="slide" id="slide-02">
+    <div class="slide-number">02</div>
+    <h2>The CWM Bet &mdash; Predict State, Not Just Syntax</h2>
+    <p>The training data has a new shape. For every code snippet, the training corpus also contains <em>execution traces</em> &mdash; structured records of variable values, function entry/exit, returned objects, side effects, exception paths.</p>
+
+    <div class="code-block">
+        <div class="code-header">CWM training-style record (illustrative)</div>
+        <pre><code><span class="cm"># source</span>
+<span class="kw">def</span> <span class="fn">tally</span>(items):
+    counts = {}
+    <span class="kw">for</span> x <span class="kw">in</span> items:
+        counts[x] = counts.get(x, <span class="num">0</span>) + <span class="num">1</span>
+    <span class="kw">return</span> counts
+
+<span class="cm"># execution trace, interleaved at training time</span>
+&lt;TRACE&gt;
+  call: tally(items=[<span class="str">'a'</span>, <span class="str">'b'</span>, <span class="str">'a'</span>])
+  step 1: counts = {}
+  step 2: x = <span class="str">'a'</span>; counts = {<span class="str">'a'</span>: <span class="num">1</span>}
+  step 3: x = <span class="str">'b'</span>; counts = {<span class="str">'a'</span>: <span class="num">1</span>, <span class="str">'b'</span>: <span class="num">1</span>}
+  step 4: x = <span class="str">'a'</span>; counts = {<span class="str">'a'</span>: <span class="num">2</span>, <span class="str">'b'</span>: <span class="num">1</span>}
+  return: {<span class="str">'a'</span>: <span class="num">2</span>, <span class="str">'b'</span>: <span class="num">1</span>}
+&lt;/TRACE&gt;</code></pre>
+    </div>
+
+    <p>The model is trained to predict both the source code <em>and</em> the trace tokens. At inference time, the model can choose to emit a trace before answering &mdash; or you can prompt it to. The execution intuition lives <em>in the model</em>, not just in a tool the model calls.</p>
+
+    <h3>Why this is more than &ldquo;chain-of-thought for code&rdquo;</h3>
+    <ul>
+        <li><strong>Structure.</strong> The trace is a typed, machine-checkable record &mdash; not free-form prose. That gives the training signal precision that CoT&rsquo;s &ldquo;let me think...&rdquo; doesn&rsquo;t have.</li>
+        <li><strong>Verifiability.</strong> At training time, the trace was generated by actually executing the code. The ground truth is exact. The model is being supervised against reality, not against another model&rsquo;s plausible-sounding text.</li>
+        <li><strong>Recoverability.</strong> If a downstream task needs the trace, the model can produce it on demand. If it needs only the answer, the trace is internalised but doesn&rsquo;t need to surface.</li>
+    </ul>
+
+    <div class="callout">
+        <div class="callout-label">Raschka&rsquo;s key claim</div>
+        <p>&ldquo;Tokens can encode structured execution traces rather than plain text&rdquo;. The structured-trace format is what gives the approach traction: ordinary CoT is a model&rsquo;s guess about its own reasoning; an execution trace is the program&rsquo;s actual behaviour. The training signal is far stronger.</p>
+    </div>
+</section>
+
+<section class="slide" id="slide-03">
+    <div class="slide-number">03</div>
+    <h2>The Architecture &mdash; A 32B Model With Sliding-Window Attention</h2>
+    <p>The architecture is deliberately conservative: a dense decoder transformer, no MoE, no exotic attention, no recurrence. The novelty is in the training data and procedure &mdash; not the model. This is methodologically important: it isolates the contribution of the world-modelling stage.</p>
+
+    <div class="table-wrap">
+        <table>
+            <thead><tr><th>Property</th><th>CWM 32B</th><th>Notes</th></tr></thead>
+            <tbody>
+                <tr><td>Total parameters</td><td>32B (dense)</td><td>No MoE; every parameter active per token.</td></tr>
+                <tr><td>Architecture</td><td>Decoder-only transformer</td><td>Standard pre-norm; no architectural exotica.</td></tr>
+                <tr><td>Context length</td><td>131&nbsp;072 tokens</td><td>Long enough to fit a meaningful slice of a real repo plus traces.</td></tr>
+                <tr><td>Attention</td><td>Sliding-window</td><td>Local attention bands rather than full <code>O(n&sup2;)</code> at full context.</td></tr>
+                <tr><td>Training data</td><td>Code + execution traces</td><td>The differentiating ingredient; size is in the same league as comparable code-LLM training mixes.</td></tr>
+                <tr><td>Tokenizer</td><td>Standard BPE-style</td><td>Trace markers are dedicated special tokens.</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <h3>Why sliding-window matters here</h3>
+    <p>Real repos plus their traces are long. Full <code>O(n&sup2;)</code> attention at 131&nbsp;k tokens would dominate inference cost. Sliding-window attention bounds each token&rsquo;s attention span (e.g. the last few thousand tokens), which keeps inference tractable. The trade-off: information from very distant parts of the repo can&rsquo;t be retrieved by attention &mdash; the model has to use the structured trace to carry that state forward, which is exactly what the training is teaching it to do.</p>
+
+    <div class="callout">
+        <div class="callout-label">An understated point</div>
+        <p>The architectural conservatism is the methodological win. It means the SWE-bench gains can&rsquo;t be attributed to clever attention tricks or routing networks &mdash; they have to be coming from the training data and procedure. That gives the result much more <em>generalisability</em> as evidence for the world-model thesis than a co-designed architecture would.</p>
+    </div>
+</section>
+
+<section class="slide" id="slide-04">
+    <div class="slide-number">04</div>
+    <h2>Four-Stage Training &mdash; Where the World Model Comes In</h2>
+    <p>The training pipeline has four stages. The third &mdash; <strong>mid-training on world-modelling data</strong> &mdash; is the new one. Without it, you have a competent but unremarkable 32B code model. With it, you get the SWE-bench numbers on the next slide.</p>
+
+    <div class="canvas-wrap">
+        <svg viewBox="0 0 760 220" width="760" height="220" xmlns="http://www.w3.org/2000/svg">
+            <style>
+                .stg { fill: #0d1117; stroke: #21262d; }
+                .stga { fill: #0d1117; stroke: #76B900; stroke-width: 2; }
+                .ttl4 { fill: #76B900; font-family: 'Space Grotesk', sans-serif; font-size: 13px; font-weight: 700; }
+                .lbl4 { fill: #e6edf3; font-family: 'JetBrains Mono', monospace; font-size: 10px; }
+                .sub4 { fill: #8b949e; font-family: 'JetBrains Mono', monospace; font-size: 9px; }
+                .arr4 { stroke: #76B900; stroke-width: 1.7; fill: none; marker-end: url(#a5); }
+            </style>
+            <defs>
+                <marker id="a5" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+                    <path d="M 0 0 L 10 5 L 0 10 z" fill="#76B900"/>
+                </marker>
+            </defs>
+            <rect class="stg" x="20" y="50" width="160" height="120" rx="6"/>
+            <text class="ttl4" x="100" y="74" text-anchor="middle">1. Pre-training</text>
+            <text class="lbl4" x="100" y="98" text-anchor="middle">general code + text</text>
+            <text class="sub4" x="100" y="118" text-anchor="middle">standard next-token loss</text>
+            <text class="sub4" x="100" y="134" text-anchor="middle">trillions of tokens</text>
+            <text class="sub4" x="100" y="152" text-anchor="middle">the foundation</text>
+
+            <rect class="stga" x="200" y="50" width="180" height="120" rx="6"/>
+            <text class="ttl4" x="290" y="74" text-anchor="middle">2. Mid-training</text>
+            <text class="lbl4" x="290" y="92" text-anchor="middle" fill="#76B900">world-modelling</text>
+            <text class="sub4" x="290" y="112" text-anchor="middle">code + execution traces</text>
+            <text class="sub4" x="290" y="128" text-anchor="middle">predict state evolution</text>
+            <text class="sub4" x="290" y="144" text-anchor="middle">the differentiator</text>
+
+            <rect class="stg" x="400" y="50" width="160" height="120" rx="6"/>
+            <text class="ttl4" x="480" y="74" text-anchor="middle">3. SFT</text>
+            <text class="lbl4" x="480" y="98" text-anchor="middle">curated tasks</text>
+            <text class="sub4" x="480" y="118" text-anchor="middle">SWE-bench-style</text>
+            <text class="sub4" x="480" y="134" text-anchor="middle">multi-step debugging</text>
+            <text class="sub4" x="480" y="152" text-anchor="middle">behaviour shaping</text>
+
+            <rect class="stg" x="580" y="50" width="160" height="120" rx="6"/>
+            <text class="ttl4" x="660" y="74" text-anchor="middle">4. RL</text>
+            <text class="lbl4" x="660" y="98" text-anchor="middle">reward = pass or fail</text>
+            <text class="sub4" x="660" y="118" text-anchor="middle">verifiable env</text>
+            <text class="sub4" x="660" y="134" text-anchor="middle">test-time scaling</text>
+            <text class="sub4" x="660" y="152" text-anchor="middle">final polish</text>
+
+            <line class="arr4" x1="180" y1="110" x2="200" y2="110"/>
+            <line class="arr4" x1="380" y1="110" x2="400" y2="110"/>
+            <line class="arr4" x1="560" y1="110" x2="580" y2="110"/>
+        </svg>
+    </div>
+
+    <h3>How the trace data is built</h3>
+    <ol>
+        <li>Take a piece of code (function, snippet, or whole file). Have an executor instrument it to log every variable assignment, function entry/exit, and side effect.</li>
+        <li>Run with synthetic or sampled inputs. Record the trace.</li>
+        <li>Interleave source and trace into a single training sequence with structured tokens delineating the two.</li>
+        <li>Train the model to predict the trace tokens conditional on the source &mdash; so producing a trace becomes a learned skill, not a tool call.</li>
+    </ol>
+
+    <p>The cost of generating this data is non-trivial: you need a working sandbox, instrumentation, and curated input distributions. That investment is a large part of why the technique is hard to reproduce without significant engineering.</p>
+
+    <div class="callout">
+        <div class="callout-label">A subtle methodological point</div>
+        <p>Mid-training, not pre-training, is where world-modelling lives. That choice means the model is not paying the cost of trace data on every pre-training token &mdash; it learns code first the standard way, then specialises into world-modelling once the basics are in place. Empirically this seems to work better than mixing trace data into the pre-training corpus from the start.</p>
+    </div>
+</section>
+
+<section class="slide" id="slide-05">
+    <div class="slide-number">05</div>
+    <h2>SWE-Bench Results &mdash; Punching Above the Weight Class</h2>
+    <p>SWE-bench is the benchmark closest to what real coding agents do: take a real GitHub issue, produce a patch, see if the tests pass. The CWM numbers in the article are striking because they isolate <em>capability per parameter</em>.</p>
+
+    <div class="table-wrap">
+        <table>
+            <thead><tr><th>Model</th><th>Params</th><th>SWE-bench tier</th><th>Notes</th></tr></thead>
+            <tbody>
+                <tr><td>gpt-oss-20b (mid reasoning)</td><td>20B</td><td>Baseline</td><td>Standard code-LLM training; smaller but solid.</td></tr>
+                <tr><td><strong>CWM 32B</strong></td><td>32B</td><td>Matches gpt-oss-20b</td><td>Same league at modestly larger size; the world-modelling is &ldquo;earning back&rdquo; the parameter overhead.</td></tr>
+                <tr><td>gpt-oss-120b (high reasoning)</td><td>120B</td><td>Standard frontier-tier</td><td>4&times; larger than CWM. The hard target.</td></tr>
+                <tr><td><strong>CWM 32B + test-time scaling</strong></td><td>32B</td><td>Exceeds gpt-oss-120b</td><td>The headline result &mdash; with extended sampling, beats a 4&times;-larger model.</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <h3>What &ldquo;test-time scaling&rdquo; means here</h3>
+    <p>The CWM at inference can sample multiple candidate patches, check each against the trace it predicts, and pick the one that survives. The execution-trace prediction is itself a verifier: a candidate that produces a trace inconsistent with the test expectations can be filtered before submission. The standard LLM doesn&rsquo;t have this; it has to ask a tool to run the code, and pays latency for every check. The CWM does much of the verification in-model.</p>
+
+    <div class="diagram-grid cols-2">
+        <div class="diagram-panel accent-border">
+            <h4>The compounding effect</h4>
+            <p>Two things buy capability: (a) the world-model gives sharper per-sample candidates than next-token-only, and (b) the model can reject its own bad candidates by examining the predicted trace. Each effect alone might be small. Together they explain the 4&times;-parameter advantage.</p>
+        </div>
+        <div class="diagram-panel accent-border">
+            <h4>Where the result is fragile</h4>
+            <p>SWE-bench is one benchmark, on one task family. The result <em>likely</em> generalises to closely-related tasks (debugging, refactoring) and <em>might not</em> to distant ones (code review, design). Treat the headline number as a strong signal, not a proof of universal advantage.</p>
+        </div>
+    </div>
+
+    <div class="callout">
+        <div class="callout-label">The deeper claim worth taking seriously</div>
+        <p>If world-modelling can save 4&times; parameters on a code task, the same idea may save parameters on <em>any task with a verifiable simulator</em>. Mathematics has formal proof checkers. Database queries have query engines. Theorem proving has Lean. The CWM result is best read as <em>evidence for a general approach</em>, not just a one-off code optimisation.</p>
+    </div>
+</section>
+
+<section class="slide" id="slide-06">
+    <div class="slide-number">06</div>
+    <h2>Interactive: World-Model Rollout Stepper</h2>
+    <p>Step through a small program. The left panel shows what a standard code LLM emits &mdash; just the next line of source. The right panel shows what a CWM emits &mdash; the next line plus its predicted state delta, and a verdict on whether the prediction matches actual execution. Watch how often the standard view goes through with no signal that something has gone wrong.</p>
+
+    <div class="roll-card">
+        <div class="roll-controls">
+            <button class="roll-btn" id="roll-step">Step</button>
+            <button class="roll-btn" id="roll-run">Run all</button>
+            <button class="roll-btn" id="roll-reset">Reset</button>
+            <button class="roll-btn" id="roll-toggle">Inject bug</button>
+            <span class="roll-status" id="roll-status">ready</span>
+        </div>
+        <div class="roll-track">
+            <div class="roll-panel">
+                <h5>Standard code LLM</h5>
+                <div class="meta">predicts source tokens only</div>
+                <div class="roll-source" id="ar-src"></div>
+                <div class="roll-pred" id="ar-pred">no state prediction</div>
+            </div>
+            <div class="roll-panel">
+                <h5>Code World Model</h5>
+                <div class="meta">predicts source + state trace</div>
+                <div class="roll-source" id="cwm-src"></div>
+                <div class="roll-vars" id="cwm-vars"></div>
+                <div class="roll-pred" id="cwm-pred">&nbsp;</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="callout">
+        <div class="callout-label">What to notice</div>
+        <p>Press <em>Inject bug</em>. The standard model emits the same fluent code as before &mdash; no signal anything is wrong. The CWM&rsquo;s state prediction <strong>diverges from actual execution</strong>, the verdict flips to red, and the model has internal evidence the candidate is bad <em>before any test runs</em>. That is the verification signal that lets test-time scaling do real work.</p>
+    </div>
+</section>
+
+<section class="slide" id="slide-07">
+    <div class="slide-number">07</div>
+    <h2>Limits &mdash; Latency, Training Complexity, Scope</h2>
+
+    <div class="diagram-grid cols-3">
+        <div class="diagram-panel accent-border">
+            <h4>Inference latency</h4>
+            <p>Predicting trace tokens means producing more tokens per task. Even with sliding-window attention, the model is generating substantially more text than a same-size autoregressive code model. Latency-sensitive completions (auto-complete in an editor) are a poor fit.</p>
+        </div>
+        <div class="diagram-panel accent-border">
+            <h4>Training complexity</h4>
+            <p>You need a sandbox, instrumentation, an input-sampling distribution, and pipeline plumbing to interleave traces with source. This is significantly more engineering than &ldquo;feed the model The Stack&rdquo;. The barrier to reproducing the technique is not weights, it is data.</p>
+        </div>
+        <div class="diagram-panel accent-border">
+            <h4>Scope &mdash; right now</h4>
+            <p>The published evaluations are on Python-heavy SWE-bench-style tasks. The technique <em>should</em> generalise &mdash; the trace format is language-agnostic in principle &mdash; but published evidence beyond Python is thin. Treat the result as Python-strong, other-languages-plausible.</p>
+        </div>
+    </div>
+
+    <h3>The open generalisation question</h3>
+    <p>If the world-model trick works only when there is a clean executable simulator, then the technique applies to code, mathematics, formal verification, SQL, and a small handful of other domains. If it works for <em>any</em> domain where you can construct a structured trace &mdash; including domains where the trace is itself learned &mdash; the technique becomes far more general. Raschka explicitly flags this as an open question. The 2026 papers on this will tell us a lot.</p>
+
+    <div class="callout warn">
+        <div class="callout-label">A practical reading</div>
+        <p>For now: CWM is the right tool when you have a code-completion-or-debugging task, you want frontier-tier performance, and you don&rsquo;t want frontier-tier inference cost. It is not yet the right tool for code review, code explanation, design conversations, or anything where the user wants to read what the model is &ldquo;thinking&rdquo; in plain prose.</p>
+    </div>
+</section>
+
+<section class="slide" id="slide-08">
+    <div class="slide-number">08</div>
+    <h2>Companion Decks &mdash; Where to Go Next</h2>
+
+    <ol class="deck-list">
+        <li class="deck-card">
+            <div class="num">01</div>
+            <div class="body">
+                <a class="deck-title" href="https://brendanjameslynskey.github.io/Raschka_Beyond_LLMs_01_Linear_Attention_Hybrids/">Linear-Attention Hybrids &rarr;</a>
+                <div class="desc">MiniMax-M1, Qwen3-Next, DeepSeek V3.2, Kimi Linear. Gated DeltaNet, the 3:1 hybrid pattern. KV-cache calculator widget.</div>
+            </div>
+        </li>
+        <li class="deck-card">
+            <div class="num">02</div>
+            <div class="body">
+                <a class="deck-title" href="https://brendanjameslynskey.github.io/Raschka_Beyond_LLMs_02_Text_Diffusion/">Text Diffusion Models &rarr;</a>
+                <div class="desc">LLaDA, Gemini Diffusion. Iterative denoising, parallel decoding, conditional-dependency limits. Diffusion-vs-autoregressive visualiser.</div>
+            </div>
+        </li>
+        <li class="deck-card">
+            <div class="num">04</div>
+            <div class="body">
+                <a class="deck-title" href="https://brendanjameslynskey.github.io/Raschka_Beyond_LLMs_04_Small_Recursive_Transformers/">Small Recursive Transformers &rarr;</a>
+                <div class="desc">HRM, TRM (7M params). Iterative self-loops for ARC-AGI. The surprising attention-not-required ablation. Recursive trace viewer.</div>
+            </div>
+        </li>
+        <li class="deck-card">
+            <div class="num">05</div>
+            <div class="body">
+                <a class="deck-title" href="https://brendanjameslynskey.github.io/Raschka_Beyond_LLMs_05_Decision_Tree/">When to Reach for Non-Transformer &rarr;</a>
+                <div class="desc">A practical decision-tree synthesising all four families. Walk your workload through the tree and see which architecture fits.</div>
+            </div>
+        </li>
+    </ol>
+</section>
+
+<section class="slide" id="slide-09">
+    <div class="slide-number">09</div>
+    <h2>Things to Try Yourself</h2>
+
+    <div class="diagram-grid cols-2">
+        <div class="diagram-panel accent-border">
+            <h4>20 minutes &mdash; play with the rollout stepper</h4>
+            <p>Press <em>Inject bug</em> at different points and watch the CWM verdict flip. Note where the standard panel gives no signal &mdash; that is the cost the standard model pays for not knowing what its code does.</p>
+        </div>
+        <div class="diagram-panel accent-border">
+            <h4>1 hour &mdash; manually trace 5 buggy commits</h4>
+            <p>From your own commit history, take five &ldquo;fix bug&rdquo; commits. Walk through the buggy code and write down the variable state at each line manually. The exercise builds the same intuition the CWM is being trained to internalise.</p>
+        </div>
+        <div class="diagram-panel accent-border">
+            <h4>An afternoon &mdash; build a tiny tracer</h4>
+            <p>Write a Python <code>sys.settrace</code> wrapper that produces structured traces in the CWM format from any input function. The amount of plumbing required is the data-engineering barrier the technique faces &mdash; doing it yourself makes that barrier viscerally clear.</p>
+        </div>
+        <div class="diagram-panel accent-border">
+            <h4>A weekend &mdash; pit CWM vs a comparable LLM</h4>
+            <p>If CWM weights are open, run it on the easiest tier of SWE-bench. Compare to a Llama-3 70B or comparable open code model. Look not just at pass-rate but at the <em>shape</em> of the failures &mdash; the CWM should fail on tasks where the trace itself was misleading; the standard LLM should fail more uniformly.</p>
+        </div>
+        <div class="diagram-panel accent-border">
+            <h4>Read the source</h4>
+            <p>The CWM technical report is the primary source &mdash; pay attention to the data-construction section, which is the part that&rsquo;s hardest to reproduce. The SWE-bench paper for context on what the benchmark actually tests.</p>
+        </div>
+        <div class="diagram-panel accent-border">
+            <h4>Watch for &mdash;</h4>
+            <p>A non-code domain getting the same treatment. Mathematics with Lean traces. SQL with query-engine traces. Whichever domain wins next will tell us whether CWM was a code-specific result or the start of a method.</p>
+        </div>
+    </div>
+
+    <div class="callout">
+        <div class="callout-label">A diagnostic for your team</div>
+        <p>Next time someone says &ldquo;our code agent needs a bigger model&rdquo;, ask: <em>does it have a way to know whether its candidate is correct before we run the tests?</em> If the answer is no, the problem may be a missing world-model, not a missing 100B parameters &mdash; and CWM is the proof-point that those are not the same lever.</p>
+    </div>
+</section>
+
+<footer class="footer">
+    <p>Companion to <a href="https://magazine.sebastianraschka.com/p/beyond-standard-llms" target="_blank" rel="noopener">Sebastian Raschka, &ldquo;Beyond Standard LLMs&rdquo;</a></p>
+    <p>Part of the <a href="https://github.com/BrendanJamesLynskey/LLM_Hub_Modern_Architectures">Modern Architectures Series</a></p>
+    <p style="margin-top: 0.5rem; font-size: 0.8rem;"><a href="https://github.com/BrendanJamesLynskey/LLM_Hub_Modern_Architectures">Back to Series Index</a></p>
+</footer>
+
+<script>
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener('click', function (e) {
+            e.preventDefault();
+            const target = document.querySelector(this.getAttribute('href'));
+            if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        });
+    });
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.style.opacity = '1';
+                entry.target.style.transform = 'translateY(0)';
+            }
+        });
+    }, { threshold: 0.1 });
+    document.querySelectorAll('.slide').forEach(slide => {
+        slide.style.opacity = '0';
+        slide.style.transform = 'translateY(30px)';
+        slide.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
+        observer.observe(slide);
+    });
+
+    // Rollout stepper
+    // Program is illustrative: tally items into a dict.
+    // We track variable state line-by-line.
+    // "Inject bug" toggles a deliberate prediction error in the CWM trace
+    // so users can see the verdict flip from "ok" to "diverged".
+    const PROGRAM = [
+        { src: 'def tally(items):',                pred: null },
+        { src: '    counts = {}',                  pred: { counts: '{}' } },
+        { src: "    for x in items:",              pred: null },
+        { src: "        counts[x] = counts.get(x, 0) + 1",
+                                                     pred: 'updateCounts' },
+        { src: '    return counts',                pred: 'returnCounts' }
+    ];
+    // simulate input items=['a','b','a']
+    const ITEMS = ['a','b','a'];
+    let lineIdx = 0;
+    let loopIdx = 0;     // which item we are on, or -1 if not in loop
+    let inLoop  = false;
+    let actualState = { counts: {} };
+    let predictedState = { counts: {} };
+    let bugInjected = false;
+
+    function fmtCounts(c) {
+        const parts = Object.keys(c).map(k => `'${k}': ${c[k]}`);
+        return '{' + parts.join(', ') + '}';
+    }
+
+    function reset() {
+        lineIdx = 0;
+        loopIdx = 0;
+        inLoop  = false;
+        actualState = { counts: {} };
+        predictedState = { counts: {} };
+        renderSrc('ar-src',  -1);
+        renderSrc('cwm-src', -1);
+        document.getElementById('cwm-vars').innerHTML = '';
+        document.getElementById('ar-pred').textContent = 'no state prediction';
+        document.getElementById('ar-pred').className = 'roll-pred';
+        document.getElementById('cwm-pred').textContent = ' ';
+        document.getElementById('cwm-pred').className = 'roll-pred';
+        document.getElementById('roll-status').textContent = bugInjected ? 'bug injected' : 'ready';
+    }
+
+    function renderSrc(elId, hi) {
+        const el = document.getElementById(elId);
+        el.innerHTML = '';
+        for (let i = 0; i < PROGRAM.length; i++) {
+            const ln = PROGRAM[i].src;
+            if (i === hi) {
+                const sp = document.createElement('span');
+                sp.className = 'cur';
+                sp.textContent = ln;
+                el.appendChild(sp);
+            } else {
+                el.appendChild(document.createTextNode(ln));
+            }
+            el.appendChild(document.createTextNode('\n'));
+        }
+    }
+
+    function renderVars(state, divergent) {
+        const el = document.getElementById('cwm-vars');
+        el.innerHTML = '';
+        Object.keys(state).forEach(k => {
+            const v = document.createElement('span');
+            v.className = 'roll-var' + (divergent ? ' changed' : ' changed');
+            v.textContent = k + ' = ' + fmtCounts(state[k]);
+            el.appendChild(v);
+        });
+    }
+
+    function step() {
+        // Advance the conceptual program counter.
+        // Lines: 0 def, 1 counts={}, 2 for, 3 body, 4 return.
+        // We model the loop by re-visiting line 3 for each item.
+        if (lineIdx === 0) {
+            renderSrc('ar-src', 0);
+            renderSrc('cwm-src', 0);
+            document.getElementById('cwm-pred').textContent = 'enter function';
+            document.getElementById('cwm-pred').className   = 'roll-pred ok';
+            lineIdx = 1;
+            return true;
+        } else if (lineIdx === 1) {
+            renderSrc('ar-src', 1);
+            renderSrc('cwm-src', 1);
+            actualState.counts = {};
+            predictedState.counts = {};
+            renderVars(predictedState, false);
+            document.getElementById('cwm-pred').textContent = 'predicted: counts = {}    actual: counts = {}    OK';
+            document.getElementById('cwm-pred').className   = 'roll-pred ok';
+            lineIdx = 2;
+            return true;
+        } else if (lineIdx === 2) {
+            renderSrc('ar-src', 2);
+            renderSrc('cwm-src', 2);
+            inLoop = true;
+            loopIdx = 0;
+            document.getElementById('cwm-pred').textContent = 'predicted: enter loop, x = ' + ITEMS[0];
+            document.getElementById('cwm-pred').className   = 'roll-pred ok';
+            lineIdx = 3;
+            return true;
+        } else if (lineIdx === 3) {
+            const x = ITEMS[loopIdx];
+            renderSrc('ar-src', 3);
+            renderSrc('cwm-src', 3);
+
+            // actual update
+            actualState.counts[x] = (actualState.counts[x] || 0) + 1;
+
+            // predicted update — bug-injected variant gets it wrong on the second 'a'
+            const buggyHere = bugInjected && loopIdx === 2;
+            if (buggyHere) {
+                // CWM's incorrect prediction: forgets that 'a' was already there
+                predictedState.counts[x] = 1;
+            } else {
+                predictedState.counts[x] = (predictedState.counts[x] || 0) + 1;
+            }
+
+            const matches = JSON.stringify(actualState) === JSON.stringify(predictedState);
+            renderVars(predictedState, true);
+            const pred = 'x = ' + x +
+                         '   predicted counts = ' + fmtCounts(predictedState.counts) +
+                         '   actual = ' + fmtCounts(actualState.counts);
+            const verdict = matches ? '   OK' : '   DIVERGED';
+            const c = document.getElementById('cwm-pred');
+            c.textContent = pred + verdict;
+            c.className = 'roll-pred ' + (matches ? 'ok' : 'bad');
+
+            // AR side has no state info either way
+            const a = document.getElementById('ar-pred');
+            a.textContent = 'standard LLM emits same code; no signal of state';
+            a.className   = 'roll-pred';
+
+            loopIdx += 1;
+            if (loopIdx >= ITEMS.length) {
+                inLoop = false;
+                lineIdx = 4;
+            }
+            return true;
+        } else if (lineIdx === 4) {
+            renderSrc('ar-src', 4);
+            renderSrc('cwm-src', 4);
+            const matches = JSON.stringify(actualState) === JSON.stringify(predictedState);
+            const c = document.getElementById('cwm-pred');
+            c.textContent = 'predicted return = ' + fmtCounts(predictedState.counts) +
+                            '   actual = ' + fmtCounts(actualState.counts) +
+                            (matches ? '   OK' : '   DIVERGED');
+            c.className = 'roll-pred ' + (matches ? 'ok' : 'bad');
+            lineIdx = 5;
+            document.getElementById('roll-status').textContent = 'done';
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    document.getElementById('roll-step').addEventListener('click', step);
+    document.getElementById('roll-reset').addEventListener('click', reset);
+    document.getElementById('roll-toggle').addEventListener('click', () => {
+        bugInjected = !bugInjected;
+        reset();
+    });
+    document.getElementById('roll-run').addEventListener('click', () => {
+        const t = setInterval(() => {
+            if (!step()) clearInterval(t);
+        }, 600);
+    });
+    reset();
+</script>
+</body>
+</html>
