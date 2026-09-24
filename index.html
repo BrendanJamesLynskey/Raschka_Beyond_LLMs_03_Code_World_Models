@@ -9,12 +9,12 @@
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg-primary: #0a0a0a; --bg-card: #0d1117; --bg-code: #161b22;
-            --text-primary: #e6edf3; --text-secondary: #8b949e;
-            --accent: #76B900; --accent-dim: #76B90044; --accent-glow: #76B90033;
-            --warm: #ffa657; --warm-dim: rgba(255,166,87,0.15);
-            --bad: #ff7b72;
-            --border: #21262d;
+            --bg-primary: #0f2027; --bg-card: #13272f; --bg-code: #182f38;
+            --text-primary: #ede7dd; --text-secondary: #8ca5a9;
+            --accent: #83c395; --accent-dim: #83c39544; --accent-glow: #83c39533;
+            --warm: #eac48b; --warm-dim: rgba(234,196,139,0.15);
+            --bad: #f48f70;
+            --border: #23404a;
             --font-display: 'Space Grotesk', sans-serif;
             --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
             --font-body: 'Inter', sans-serif;
@@ -77,18 +77,18 @@
         .slide li strong { color: var(--text-primary); }
         .slide code { font-family: var(--font-mono); font-size: 0.88em;
                       background: var(--bg-code); border: 1px solid var(--border);
-                      padding: 0.05rem 0.35rem; border-radius: 3px; color: #c9d1d9; }
+                      padding: 0.05rem 0.35rem; border-radius: 3px; color: #cfd7d1; }
         .code-block { background: var(--bg-code); border: 1px solid var(--border);
                       border-radius: 8px; margin: 1.25rem 0; overflow: hidden; }
         .code-header { font-family: var(--font-mono); font-size: 0.75rem;
-                       color: var(--accent); background: rgba(118, 185, 0, 0.08);
+                       color: var(--accent); background: rgba(131,195,149,0.08);
                        padding: 0.4rem 1rem; border-bottom: 1px solid var(--border); }
         .code-block pre { margin: 0; padding: 1rem; overflow-x: auto; }
         .code-block code { font-family: var(--font-mono); font-size: 0.85rem;
-                           line-height: 1.6; color: #c9d1d9; background: transparent;
+                           line-height: 1.6; color: #cfd7d1; background: transparent;
                            border: none; padding: 0; }
-        .kw { color: #ff7b72; } .fn { color: #d2a8ff; } .str { color: #a5d6ff; }
-        .cm { color: #8b949e; font-style: italic; } .num { color: #79c0ff; }
+        .kw { color: #f48f70; } .fn { color: #d4c0ea; } .str { color: #c3dbea; }
+        .cm { color: #8ca5a9; font-style: italic; } .num { color: #a8cee8; }
         .table-wrap { overflow-x: auto; margin: 1.25rem 0; border-radius: 8px;
                       border: 1px solid var(--border); }
         table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
@@ -98,7 +98,7 @@
         td { padding: 0.6rem 1rem; border-bottom: 1px solid var(--border);
              color: var(--text-secondary); }
         tr:last-child td { border-bottom: none; }
-        tr:nth-child(even) td { background: rgba(13, 17, 23, 0.5); }
+        tr:nth-child(even) td { background: rgba(19,39,47,0.5); }
         .diagram-grid { display: grid; gap: 0.75rem; margin: 1.5rem 0;
                         padding: 1.5rem; background: var(--bg-card);
                         border: 1px solid var(--border); border-radius: 8px; }
@@ -369,16 +369,16 @@
     <div class="canvas-wrap">
         <svg viewBox="0 0 760 220" width="760" height="220" xmlns="http://www.w3.org/2000/svg">
             <style>
-                .stg { fill: #0d1117; stroke: #21262d; }
-                .stga { fill: #0d1117; stroke: #76B900; stroke-width: 2; }
-                .ttl4 { fill: #76B900; font-family: 'Space Grotesk', sans-serif; font-size: 13px; font-weight: 700; }
-                .lbl4 { fill: #e6edf3; font-family: 'JetBrains Mono', monospace; font-size: 10px; }
-                .sub4 { fill: #8b949e; font-family: 'JetBrains Mono', monospace; font-size: 9px; }
-                .arr4 { stroke: #76B900; stroke-width: 1.7; fill: none; marker-end: url(#a5); }
+                .stg { fill: #13272f; stroke: #23404a; }
+                .stga { fill: #13272f; stroke: #83c395; stroke-width: 2; }
+                .ttl4 { fill: #83c395; font-family: 'Space Grotesk', sans-serif; font-size: 13px; font-weight: 700; }
+                .lbl4 { fill: #ede7dd; font-family: 'JetBrains Mono', monospace; font-size: 10px; }
+                .sub4 { fill: #8ca5a9; font-family: 'JetBrains Mono', monospace; font-size: 9px; }
+                .arr4 { stroke: #83c395; stroke-width: 1.7; fill: none; marker-end: url(#a5); }
             </style>
             <defs>
                 <marker id="a5" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
-                    <path d="M 0 0 L 10 5 L 0 10 z" fill="#76B900"/>
+                    <path d="M 0 0 L 10 5 L 0 10 z" fill="#83c395"/>
                 </marker>
             </defs>
             <rect class="stg" x="20" y="50" width="160" height="120" rx="6"/>
@@ -390,7 +390,7 @@
 
             <rect class="stga" x="200" y="50" width="180" height="120" rx="6"/>
             <text class="ttl4" x="290" y="74" text-anchor="middle">2. Mid-training</text>
-            <text class="lbl4" x="290" y="92" text-anchor="middle" fill="#76B900">world-modelling</text>
+            <text class="lbl4" x="290" y="92" text-anchor="middle" fill="#83c395">world-modelling</text>
             <text class="sub4" x="290" y="112" text-anchor="middle">code + execution traces</text>
             <text class="sub4" x="290" y="128" text-anchor="middle">predict state evolution</text>
             <text class="sub4" x="290" y="144" text-anchor="middle">the differentiator</text>
